@@ -1,5 +1,5 @@
 // Ubah angka versi ini setiap kali Anda mengganti index.html
-var C = 'gudang-v6';
+var C = 'gudang-v8';
 var FILES = ['./', 'index.html', 'manifest.json', 'icon-192.png', 'icon-512.png'];
 
 self.addEventListener('install', function (e) {

@@ -161,7 +161,7 @@ h2,details.card>summary{font-size:16px;color:var(--ink)}
 .vl{padding:0 8px 6px}
 .pill{font-size:14px;padding:6px 12px}.pill .pq{font-size:16px}
 .vl .pill{padding:5px 11px;font-size:13px}.vl .pq{font-size:14px}
-.bnav{position:fixed;left:0;right:0;bottom:0;z-index:20;display:grid;grid-template-columns:repeat(4,1fr);background:var(--surface);border-top:1px solid var(--line);padding:6px 8px calc(6px + env(safe-area-inset-bottom,0px))}
+.bnav{position:fixed;left:0;right:0;bottom:0;z-index:20;display:grid;grid-template-columns:repeat(5,1fr);background:var(--surface);border-top:1px solid var(--line);padding:6px 8px calc(6px + env(safe-area-inset-bottom,0px))}
 .bnav button{border:0;background:none;display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 0;font-size:11.5px;font-weight:600;color:var(--muted);cursor:pointer;border-radius:12px}
 .bnav svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .bnav button[aria-selected=true]{color:var(--brand);background:rgba(37,99,235,.1)}
@@ -201,6 +201,17 @@ body{background:var(--bgg),var(--bg);background-repeat:no-repeat;min-height:100v
 .hist ul{margin:4px 0 0;padding-left:16px}
 .list .hist li{padding:2px 0;border-top:0;color:var(--muted)}
 .hist li span{color:var(--ink);font-weight:600}
+.toast.act.on{pointer-events:auto}
+.toast button{margin-left:10px;border:0;border-radius:999px;background:rgba(255,255,255,.28);color:inherit;font-weight:700;padding:4px 12px;cursor:pointer}
+textarea.field{resize:vertical;font-family:ui-monospace,Menlo,monospace}
+.faq details{border-top:1px solid var(--line);padding:10px 0}
+.faq details:first-of-type{margin-top:6px}
+.faq summary{font-weight:700;cursor:pointer;list-style:none;display:flex;align-items:center;gap:8px}
+.faq summary::-webkit-details-marker{display:none}
+.faq summary::after{content:'▾';margin-left:auto;color:var(--muted);transition:transform .2s}
+.faq details[open] summary::after{transform:rotate(180deg)}
+.faq ol,.faq ul{margin:8px 0 0;padding-left:20px;font-size:15px}
+.faq li{margin:5px 0;color:var(--ink)}
 </style>
 </head>
 <body>
@@ -221,7 +232,9 @@ body{background:var(--bgg),var(--bg);background-repeat:no-repeat;min-height:100v
       <label for="kode" style="margin-top:0">Part code (7 digit), Ext. code, atau nama part</label>
       <input class="field" id="kode" autocomplete="off" inputmode="search" placeholder="Ketik part code atau nama part, lalu Enter">
       <ul class="sug" id="sug" hidden></ul>
+      <div class="chips" id="quick" style="margin-top:8px"></div>
       <div id="partbox"></div>
+      <div id="favrow" style="margin-top:8px"></div>
 
       <div id="modelbox" hidden>
         <label>Model (sesuai surat jalan)</label>
@@ -245,6 +258,7 @@ body{background:var(--bgg),var(--bg);background-repeat:no-repeat;min-height:100v
       <label style="display:flex;gap:10px;align-items:center;color:var(--ink)"><input type="checkbox" id="nfull" style="width:22px;height:22px"> Tandai NOT FULL (barang datang kurang)</label>
       
 
+      <div id="dupmsg"></div>
       <div id="verdict"></div>
       <p class="err" id="err" role="alert"></p>
       <button class="btn" id="simpan">Simpan penerimaan</button>
@@ -279,7 +293,126 @@ body{background:var(--bgg),var(--bg);background-repeat:no-repeat;min-height:100v
       <h2>Pengaturan</h2>
       <label style="margin-top:0">Tampilan layar</label>
       <div class="chips" id="temachips"></div>
-      <p class="hint" style="margin-top:14px">Catatan penerimaan tersimpan di HP ini. Alat scan barcode yang tersambung (Bluetooth atau kabel) tetap bisa dipakai: klik kolom part code, lalu scan.</p>
+      <label>Cadangan catatan</label>
+      <p class="hint" style="margin-top:0">Catatan hanya tersimpan di HP ini. Simpan cadangan secara berkala supaya aman kalau HP hilang atau data browser terhapus.</p>
+      <div class="acts" style="flex-wrap:wrap"><button type="button" class="sm sv" id="bkcopy">Salin cadangan</button><button type="button" class="sm" id="bkfile">Unduh file cadangan</button></div>
+      <label>Pulihkan dari cadangan</label>
+      <textarea class="field" id="bkarea" rows="4" placeholder="Tempel teks cadangan di sini" style="font-size:14px"></textarea>
+      <div class="acts"><button type="button" class="sm sv" id="bkrestore">Pulihkan (gabungkan)</button></div>
+      <p class="hint" id="bkmsg" style="font-weight:600;color:var(--ink)"></p>
+      <p class="hint">Memulihkan hanya menambahkan catatan yang belum ada, jadi catatan yang sekarang tidak tertimpa. Alat scan barcode yang tersambung (Bluetooth atau kabel) tetap bisa dipakai: klik kolom part code, lalu scan.</p>
+    </div>
+  </section>
+  <section id="p5" hidden>
+    <div class="card faq">
+      <h2>Panduan penggunaan</h2>
+      <p class="hint" style="margin-top:0">Tekan judul untuk membuka. Panduan ini menjelaskan semua fitur Logistik Kiyokuni.</p>
+
+      <details open><summary>Mulai cepat: mencatat barang datang</summary>
+        <ol>
+          <li>Buka menu <b>Terima</b>. Tanggal kedatangan di pojok kanan atas otomatis hari ini, dan bisa diganti.</li>
+          <li>Ketik part code (7 digit), Ext. code, atau nama part. Pilih dari saran yang muncul, atau tekan tombol part favorit atau terakhir.</li>
+          <li>Kalau satu part punya beberapa vendor, pilih vendor yang mengirim barang.</li>
+          <li>Isi <b>Qty datang</b> sesuai hasil hitung fisik.</li>
+          <li>Centang <b>NOT FULL</b> kalau barang datang kurang.</li>
+          <li>Tekan <b>Simpan</b>. Muncul tulisan "Tersimpan ✓".</li>
+        </ol>
+      </details>
+
+      <details><summary>Empat kotak ringkasan di atas</summary>
+        <ul>
+          <li><b>Kedatangan</b>: jumlah catatan pada tanggal yang dipilih.</li>
+          <li><b>Vendor</b>: jumlah vendor yang tercatat pada tanggal itu.</li>
+          <li><b>Not full</b>: jumlah barang yang ditandai datang kurang.</li>
+          <li><b>Perlu dicek</b>: jumlah catatan yang punya peringatan.</li>
+        </ul>
+      </details>
+
+      <details><summary>Menghitung qty langsung di kolom</summary>
+        <ul>
+          <li>Di bawah kolom qty ada tombol <b>× + − ÷ ( ) ⌫ C</b>. Pakai tombol itu untuk menghitung tanpa kalkulator terpisah.</li>
+          <li>Contoh: 12 box isi 200 ditambah 80. Ketik <b>12</b>, tekan <b>×</b>, ketik <b>200</b>, tekan <b>+</b>, ketik <b>80</b>. Hasilnya tampil di bawahnya.</li>
+          <li>Kalau part punya SPQ, muncul tombol <b>× 200 (isi per box)</b>. Ketik jumlah box dulu, lalu tekan tombol itu.</li>
+        </ul>
+      </details>
+
+      <details><summary>Arti warna titik dan peringatan</summary>
+        <ul>
+          <li><b>Hijau</b>: diterima. <b>Kuning</b>: not full. <b>Merah</b>: ada peringatan yang perlu dicek.</li>
+          <li><b>Part tidak terdaftar</b>: kodenya tidak ada di data stok. Cek lagi penulisannya.</li>
+          <li><b>Bukan kelipatan SPQ</b>: qty tidak pas dengan isi per box, jadi kemungkinan barang kurang. Cek isi kemasan.</li>
+          <li><b>Sudah dicatat tanggal ini</b>: part dari vendor yang sama sudah ada. Kalau memang kedatangan baru, tekan <b>Simpan</b> sekali lagi.</li>
+        </ul>
+      </details>
+
+      <details><summary>Menu Daftar dan rekap per vendor</summary>
+        <ul>
+          <li><b>Rekap per vendor</b>: tiap vendor satu baris. Kotak angka di kanan adalah jumlah kedatangan. Tekan barisnya untuk melihat part dan qty di dalamnya. Semua tipe motor digabung jadi satu.</li>
+          <li>Tombol <b>Buka semua</b> dan <b>Tutup semua</b> membuka atau menutup semua vendor. Kotak pilihan vendor menampilkan satu vendor saja.</li>
+          <li><b>Per part (semua vendor)</b> menggabungkan part yang sama dari semua vendor.</li>
+          <li><b>Daftar penerimaan</b>: setiap kedatangan berupa bubble kecil. Tekan bubble untuk melihat detailnya. Filternya: Semua, Not full, dan Perlu dicek.</li>
+          <li><b>Barang not full</b>: daftar barang yang datang kurang. Tombol <b>Terima susulan</b> mengisi formulir otomatis saat sisanya datang.</li>
+          <li><b>Salin laporan untuk dikirim</b>: menyalin laporan hari itu per vendor, lalu tempel ke WhatsApp atau tempat lain.</li>
+        </ul>
+      </details>
+
+      <details><summary>Mengedit kesalahan dan riwayat edit</summary>
+        <ul>
+          <li>Di menu <b>Daftar</b>, tekan bubble, lalu tekan <b>Edit</b>.</li>
+          <li>Yang bisa diubah: part code, vendor, qty, tanggal kedatangan, dan status NOT FULL. Tekan <b>Simpan perubahan</b>.</li>
+          <li>Catatan yang diedit diberi label ungu <b>EDITED</b>.</li>
+          <li>Bagian <b>Riwayat edit</b> menampilkan waktu setiap perubahan, dengan nilai sebelum dan sesudahnya.</li>
+        </ul>
+      </details>
+
+      <details><summary>Menghapus dan membatalkan hapus</summary>
+        <ul>
+          <li>Tekan bubble, lalu <b>Hapus</b>. Tombolnya berubah menjadi <b>Yakin hapus?</b>, tekan lagi untuk menghapus.</li>
+          <li>Setelah dihapus, muncul tombol <b>Batalkan</b> di bagian bawah layar selama 6 detik. Setelah itu penghapusan permanen.</li>
+          <li><b>Hapus semua catatan tanggal ini</b> menghapus semua catatan pada tanggal yang dipilih. Tekan dua kali, dan hasilnya juga bisa dibatalkan.</li>
+        </ul>
+      </details>
+
+      <details><summary>Mencari kedatangan di hari lain</summary>
+        <ul>
+          <li>Buka menu <b>Cari</b>, lalu ketik part code, Ext. code, nama part, atau vendor.</li>
+          <li>Hasilnya dikelompokkan per part, lengkap dengan semua tanggal kedatangannya dan jumlah qty.</li>
+          <li>Tekan satu kedatangan untuk membuka daftar pada tanggal itu.</li>
+        </ul>
+      </details>
+
+      <details><summary>Part favorit dan part terakhir</summary>
+        <ul>
+          <li>Di menu <b>Terima</b>, saat kolom part code masih kosong, muncul tombol part yang terakhir dicatat. Tekan satu, dan part serta vendor terakhirnya langsung terisi.</li>
+          <li>Setelah memilih part, tekan <b>☆ Jadikan favorit</b>. Part favorit bertanda ★ dan selalu muncul paling depan.</li>
+        </ul>
+      </details>
+
+      <details><summary>Cadangan dan pemulihan catatan</summary>
+        <ul>
+          <li>Buka menu <b>Atur</b>. Tekan <b>Salin cadangan</b>, lalu simpan teksnya di tempat aman, misalnya kirim ke chat sendiri.</li>
+          <li>Untuk memulihkan, tempel teks cadangan di kotak lalu tekan <b>Pulihkan (gabungkan)</b>. Catatan yang sudah ada tidak tertimpa.</li>
+          <li>Buat cadangan secara berkala, terutama sebelum ganti HP.</li>
+        </ul>
+      </details>
+
+      <details><summary>Tema, pasang di layar utama, dan offline</summary>
+        <ul>
+          <li>Menu <b>Atur</b> punya pilihan tampilan: Otomatis, Terang, atau Gelap.</li>
+          <li>iPhone: buka di Safari, tekan Bagikan, lalu <b>Tambah ke Layar Utama</b>. Android: buka di Chrome, tekan menu titik tiga, lalu <b>Tambahkan ke layar utama</b>.</li>
+          <li>Setelah dibuka sekali dengan internet, aplikasi versi GitHub bisa dibuka tanpa internet.</li>
+        </ul>
+      </details>
+
+      <details><summary>Penting: tentang penyimpanan data</summary>
+        <ul>
+          <li>Catatan tersimpan di HP masing-masing dan <b>tidak</b> dibagikan ke HP lain. Tiap orang punya catatan sendiri.</li>
+          <li>Satu orang sebaiknya memakai satu HP. Kalau satu HP dipakai bergantian, catatannya tercampur.</li>
+          <li>Di iPhone, Safari dan ikon layar utama punya penyimpanan terpisah. Pilih satu cara membuka dan jangan berganti-ganti.</li>
+          <li>Jangan menghapus data browser. Catatan ikut hilang kalau data itu dihapus.</li>
+          <li>Alat scan barcode yang tersambung (Bluetooth atau kabel) bisa dipakai: klik kolom part code, lalu scan.</li>
+        </ul>
+      </details>
     </div>
   </section>
 
@@ -291,6 +424,7 @@ body{background:var(--bgg),var(--bg);background-repeat:no-repeat;min-height:100v
   <button role="tab" id="t2" aria-selected="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>Daftar</button>
   <button role="tab" id="t3" aria-selected="false"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>Cari</button>
   <button role="tab" id="t4" aria-selected="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg>Atur</button>
+  <button role="tab" id="t5" aria-selected="false"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 015 0c0 1.5-2.5 2-2.5 3.5M12 17h.01"/></svg>Panduan</button>
 </nav>
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
 <script>
@@ -331,13 +465,48 @@ function renderSpq(){var sb=$('spqbox'),c=$('spqchips'),q=$('kode').value.trim()
 function renderMul(){$('spqmul').innerHTML=(sel?sel.q:[]).map(function(n){return '<button type="button" class="chip" data-m="'+n+'">× '+n+' (isi per box)</button>'}).join('')}
 $('spqmul').onclick=function(e){var c=e.target.closest('.chip');if(!c)return;var a=$('act');if(!a.value.trim()){a.focus();return}a.value+='×'+c.getAttribute('data-m');a.focus();cek()};
 $('opbar').onclick=function(e){var o=e.target.getAttribute('data-op');if(!o)return;var a=$('act');if(o==='C')a.value='';else if(o==='⌫')a.value=a.value.slice(0,-1);else a.value+=o;a.focus();cek()};
+var dupAck='';
+function curVendor(){return ((vendor==='__lain'||!sel)?$('vendorx').value.trim().toUpperCase():vendor)||'-'}
+function dupFind(){var q=$('kode').value.trim();if(!q)return[];var p=sel?sel.p:q,v=curVendor(),t=$('tgl').value;return data.filter(function(x){return x.date===t&&x.p===p&&(x.v||'-')===v})}
+function showDup(){var d=dupFind(),el=$('dupmsg');el.innerHTML=d.length?'<div class="verdict warn" style="margin-top:8px">Sudah dicatat tanggal ini ('+d.length+'x): '+d.map(function(x){return esc(qv(x))+' ('+esc(x.time)+')'}).join(', ')+'. Pastikan ini kedatangan baru.</div>':''}
+
+/* favorit dan part terakhir */
+var FK='gudang-fav-v1',favs=[];try{favs=JSON.parse(localStorage.getItem(FK)||'[]')||[]}catch(e){favs=[]}
+function saveFavs(){try{localStorage.setItem(FK,JSON.stringify(favs))}catch(e){}}
+function renderQuick(){var q=$('quick'),fr=$('favrow');
+  if(sel){q.innerHTML='';var on=favs.indexOf(sel.p)>-1;fr.innerHTML='<button type="button" class="sm" id="favbtn">'+(on?'★ Favorit (tekan untuk hapus)':'☆ Jadikan favorit')+'</button>';return}
+  fr.innerHTML='';
+  if($('kode').value.trim()){q.innerHTML='';return}
+  var seen={},list=[];
+  favs.forEach(function(p){if(byCode[p]&&!seen[p]){seen[p]=1;list.push({p:p,f:1})}});
+  for(var i=data.length-1;i>=0&&list.length<favs.length+6;i--){var p=data[i].p;if(byCode[p]&&!seen[p]){seen[p]=1;list.push({p:p,f:0})}}
+  q.innerHTML=list.length?'<div class="hint" style="width:100%;margin:2px 0 0">Favorit dan terakhir dicatat</div>'+list.map(function(o){return '<button type="button" class="chip" data-p="'+esc(o.p)+'">'+(o.f?'★ ':'')+esc(o.p)+'</button>'}).join(''):''}
+$('favrow').onclick=function(e){if(e.target.id==='favbtn'&&sel){var i=favs.indexOf(sel.p);if(i>-1)favs.splice(i,1);else favs.push(sel.p);saveFavs();renderQuick();toast(i>-1?'Dihapus dari favorit':'Ditambahkan ke favorit')}};
+$('quick').onclick=function(e){var c=e.target.closest('[data-p]');if(!c)return;var m=byCode[c.getAttribute('data-p')];if(!m)return;pilih(m);
+  for(var i=data.length-1;i>=0;i--){if(data[i].p===m.p){var v=data[i].v;if(v&&m.v.indexOf(v)>-1){vendor=v;renderPart()}break}}};
+
+/* cadangan */
+function backupText(){return JSON.stringify({app:'kiyokuni',v:1,t:new Date().toISOString(),data:data,favs:favs})}
+function bkMsg(t){$('bkmsg').textContent=t}
+$('bkcopy').onclick=function(){var t=backupText();$('bkarea').value=t;
+  try{navigator.clipboard.writeText(t).then(function(){bkMsg('Cadangan ('+data.length+' catatan) tersalin. Tempel dan simpan di tempat aman, misalnya kirim ke chat sendiri.')},function(){bkMsg('Gagal menyalin otomatis. Teks cadangan muncul di kotak di bawah: tekan lama, pilih Pilih semua, lalu Salin.')})}catch(e){bkMsg('Teks cadangan muncul di kotak di bawah: tekan lama, pilih Pilih semua, lalu Salin.')}};
+$('bkfile').onclick=function(){try{var b=new Blob([backupText()],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='cadangan-kiyokuni-'+today()+'.json';document.body.appendChild(a);a.click();a.remove();bkMsg('File cadangan diunduh. Kalau tidak ada file, pakai Salin cadangan.')}catch(e){bkMsg('Unduh tidak didukung di sini. Pakai Salin cadangan.')}};
+$('bkrestore').onclick=function(){var s=$('bkarea').value.trim();if(!s){bkMsg('Tempel teks cadangan dulu.');return}
+  try{var o=JSON.parse(s),arr=Array.isArray(o)?o:o.data;if(!Array.isArray(arr))throw 0;
+    var have={},add=0;data.forEach(function(x){have[x.id]=1});
+    arr.forEach(function(x){if(x&&x.id&&x.p&&typeof x.ac==='number'&&x.date&&!have[x.id]){data.push(x);have[x.id]=1;add++}});
+    if(o&&Array.isArray(o.favs)){o.favs.forEach(function(p){if(favs.indexOf(p)<0)favs.push(p)});saveFavs()}
+    data.sort(function(a,b){return (a.date+(a.time||''))<(b.date+(b.time||''))?-1:1});save();render();renderQuick();
+    bkMsg('Pulihkan selesai: '+add+' catatan ditambahkan, '+(arr.length-add)+' dilewati karena sudah ada atau tidak valid.')
+  }catch(e){bkMsg('Teks cadangan tidak valid. Pastikan seluruh teks tertempel utuh.')}};
+
 function renderVendor(){var vb=$('vendorbox'),c=$('vendorchips');
   if(sel){vb.hidden=false;
     c.innerHTML=sel.v.map(function(v){return '<button type="button" class="chip" data-v="'+esc(v)+'" aria-pressed="'+(v===vendor)+'">'+esc(v)+'</button>'}).join('')+'<button type="button" class="chip" data-v="__lain" aria-pressed="'+(vendor==='__lain')+'">Vendor lain</button>';
     $('vendorx').hidden=vendor!=='__lain'}
   else{var q=$('kode').value.trim();vb.hidden=!(q.length>=4&&!cari(q).length);c.innerHTML='';$('vendorx').hidden=false}}
 function renderPart(){
-  renderVendor();renderMul();var b=$('partbox'),mb=$('modelbox');
+  renderVendor();renderMul();renderQuick();var b=$('partbox'),mb=$('modelbox');
   if(sel){
     b.innerHTML='<div class="part"><div class="nm">'+esc(sel.n||'(tanpa nama)')+'</div><div class="mt">Part code '+esc(sel.p)+(sel.e?' · Ext. '+esc(sel.e):'')+'</div><div class="mt">Vendor: '+esc(sel.v.join(', ')||'-')+'</div><div class="mt">Lokasi: '+esc(sel.l.join(' | ')||'-')+'</div><div class="mt">SPQ: '+esc(sel.q.join(', ')||'-')+'</div></div>';
     mb.hidden=true;
@@ -367,6 +536,7 @@ function evalForm(){
 function cek(){
   var r=evalForm(),v=$('verdict');$('err').textContent='';
   var raw=$('act').value.trim(),cv=hitung(raw);$('calcres').textContent=(raw&&/[×÷+−*\/()-]/.test(raw.replace(/^-/,''))&&!isNaN(cv))?'Hasil hitungan: '+fmt(cv)+' qty':'';
+  showDup();
   if(!r){v.innerHTML='';return}
   var cls='ok',head='';
   if(isNaN(r.ac)){if(!r.flags.length){v.innerHTML='';return}cls='warn';head='Periksa dulu'}
@@ -380,10 +550,13 @@ $('simpan').onclick=function(){
   if(!r){err.textContent='Isi part code dulu.';$('kode').focus();return}
   if(sel&&sel.v.length>1&&!vendor){err.textContent='Pilih vendor yang mengirim barang.';return}
   if(isNaN(r.ac)||r.ac<0){err.textContent='Isi qty datang dengan angka. Kalau tidak ada yang datang, isi 0.';$('act').focus();return}
+  var dp=dupFind(),sig=($('kode').value.trim()+'|'+curVendor()+'|'+$('tgl').value+'|'+r.ac);
+  if(dp.length&&dupAck!==sig){dupAck=sig;err.textContent='Part ini dari vendor yang sama sudah dicatat tanggal ini ('+dp.length+'x). Tekan Simpan sekali lagi kalau memang kedatangan baru.';return}
+  dupAck='';
   var d=new Date();
   data.push({id:Date.now()+'-'+Math.random().toString(36).slice(2,6),date:$('tgl').value,time:String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0'),
     p:sel?sel.p:$('kode').value.trim(),e:sel?sel.e:'',n:sel?sel.n:'(tidak terdaftar)',m:r.mdl,v:((vendor==='__lain'||!sel)?$('vendorx').value.trim().toUpperCase():vendor)||'-',ac:r.ac,st:r.nf?'NOT FULL':'OK',flags:r.flags,sj:'',note:''});
-  save();reset();render();toast('Tersimpan ✓');
+  save();reset();render();showDup();toast('Tersimpan ✓');
 };
 function reset(){sel=null;model='';vendor='';spq=0;['kode','act','modelx','vendorx'].forEach(function(i){$(i).value=''});$('nfull').checked=false;$('verdict').innerHTML='';$('err').textContent='';$('calcres').textContent='';renderPart();$('kode').focus()}
 
@@ -473,7 +646,7 @@ function onList(e){var pb=e.target.closest&&e.target.closest('[data-ex]');if(pb)
   if(ge('data-save')){saveEdit(ge('data-save'));return}
   var d=e.target.getAttribute('data-del'),s=e.target.getAttribute('data-susul');
   if(e.target.getAttribute('data-cancel')){pend=null;render();return}
-  if(d){if(pend===d){data=data.filter(function(x){return x.id!==d});save();pend=null}else pend=d;render()}
+  if(d){if(pend===d){var idx=-1,rem1=null;data.forEach(function(x,i){if(x.id===d){idx=i;rem1=x}});data=data.filter(function(x){return x.id!==d});save();pend=null;render();if(rem1)toast('Kedatangan dihapus','Batalkan',function(){restore([{x:rem1,i:idx}])});return}else pend=d;render()}
   if(s){var x=data.filter(function(y){return y.id===s})[0];if(!x)return;tab(1);var m=byCode[x.p];if(m){pilih(m);model=x.m&&m.m.indexOf(x.m)>-1?x.m:(m.m.length===1?m.m[0]:'');vendor=x.v&&m.v.indexOf(x.v)>-1?x.v:vendor;renderPart()}else{$('kode').value=x.p}
     $('act').focus();cek()}
 }
@@ -481,7 +654,7 @@ $('daftar').onclick=onList;$('nf').onclick=onList;
 $('tgl').onchange=function(){pend=null;render()};
 var hs=0;$('hapusSemua').onclick=function(){var b=$('hapusSemua');if(!items().length)return;
   if(!hs){hs=1;b.textContent='Yakin? Tekan lagi untuk hapus semua';setTimeout(function(){hs=0;b.textContent='Hapus semua catatan tanggal ini'},4000)}
-  else{var t=$('tgl').value;data=data.filter(function(x){return x.date!==t});save();hs=0;b.textContent='Hapus semua catatan tanggal ini';render()}};
+  else{var t=$('tgl').value,rem=[];data.forEach(function(x,i){if(x.date===t)rem.push({x:x,i:i})});data=data.filter(function(x){return x.date!==t});save();hs=0;b.textContent='Hapus semua catatan tanggal ini';render();if(rem.length)toast(rem.length+' catatan dihapus','Batalkan',function(){restore(rem)})}};
 $('salin').onclick=function(){
   var it=items(),tot=0;it.forEach(function(x){tot+=x.ac});
   var t='Laporan penerimaan barang, tanggal kedatangan: '+tglID($('tgl').value)+'\nTotal vendor: '+vendorsOf(it).filter(function(v){return v!=='-'}).length+' ('+it.length+' kedatangan)\n\nPER VENDOR:\n';
@@ -518,9 +691,12 @@ applyTema(getTema());
 
 
 var toastT=null;
-function toast(m){var t=$('toast');t.textContent=m;t.classList.add('on');try{navigator.vibrate&&navigator.vibrate(40)}catch(e){}clearTimeout(toastT);toastT=setTimeout(function(){t.classList.remove('on')},1600)}
-function tab(n){[1,2,3,4].forEach(function(i){$('p'+i).hidden=i!==n;var b=$('t'+i);if(b)b.setAttribute('aria-selected',i===n)});if(n===2)render();if(n===3)renderCari();try{window.scrollTo(0,0)}catch(e){}}
-[1,2,3,4].forEach(function(i){$('t'+i).onclick=function(){tab(i)}});
+function toast(m,act,fn){var t=$('toast');t.textContent=m;t.classList.toggle('act',!!act);
+  if(act){var b=document.createElement('button');b.type='button';b.textContent=act;b.onclick=function(){clearTimeout(toastT);t.classList.remove('on');fn()};t.appendChild(b)}
+  t.classList.add('on');try{navigator.vibrate&&navigator.vibrate(40)}catch(e){}clearTimeout(toastT);toastT=setTimeout(function(){t.classList.remove('on')},act?6000:1600)}
+function restore(list){list.sort(function(a,b){return a.i-b.i}).forEach(function(it){data.splice(Math.min(it.i,data.length),0,it.x)});save();render();toast('Dikembalikan ✓')}
+function tab(n){[1,2,3,4,5].forEach(function(i){$('p'+i).hidden=i!==n;var b=$('t'+i);if(b)b.setAttribute('aria-selected',i===n)});if(n===2)render();if(n===3)renderCari();try{window.scrollTo(0,0)}catch(e){}}
+[1,2,3,4,5].forEach(function(i){$('t'+i).onclick=function(){tab(i)}});
 
 
 
