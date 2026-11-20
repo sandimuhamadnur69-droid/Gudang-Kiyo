@@ -1,15 +1,9 @@
 // Ubah angka versi ini setiap kali Anda mengganti index.html
-var C = 'gudang-v3';
+var C = 'gudang-v4';
 var FILES = ['./', 'index.html', 'manifest.json', 'icon-192.png', 'icon-512.png'];
-// Pustaka scan barcode (disimpan juga supaya scan bisa dipakai offline di iPhone)
-var LIB = 'https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js';
 
 self.addEventListener('install', function (e) {
-  e.waitUntil(caches.open(C).then(function (c) {
-    return c.addAll(FILES).then(function () {
-      return c.add(new Request(LIB, { mode: 'cors' })).catch(function () {});
-    });
-  }));
+  e.waitUntil(caches.open(C).then(function (c) { return c.addAll(FILES); }));
   self.skipWaiting();
 });
 
